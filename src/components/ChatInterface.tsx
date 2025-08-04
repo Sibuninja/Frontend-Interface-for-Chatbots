@@ -23,12 +23,13 @@ export const ChatInterface = ({ className }: ChatInterfaceProps) => {
   const scrollAreaRef = useRef<HTMLDivElement>(null);
 
   const scrollToBottom = () => {
-    if (scrollAreaRef.current) {
-      const scrollElement = scrollAreaRef.current.querySelector('[data-radix-scroll-area-viewport]');
+    // Use a simple timeout to ensure the DOM has updated
+    setTimeout(() => {
+      const scrollElement = document.querySelector('[data-radix-scroll-area-viewport]');
       if (scrollElement) {
         scrollElement.scrollTop = scrollElement.scrollHeight;
       }
-    }
+    }, 100);
   };
 
   useEffect(() => {
@@ -86,12 +87,12 @@ export const ChatInterface = ({ className }: ChatInterfaceProps) => {
     )}>
       <ChatHeader />
       
-      <div className="flex-1 relative">
+      <div className="flex-1 flex flex-col min-h-0">
         {messages.length === 0 ? (
           <EmptyState onSuggestionClick={handleSuggestionClick} />
         ) : (
-          <ScrollArea ref={scrollAreaRef} className="h-full px-4 py-6">
-            <div className="space-y-1">
+          <ScrollArea className="flex-1 px-4 py-6">
+            <div className="space-y-1 pb-4">
               {messages.map((message) => (
                 <ChatMessage
                   key={message.id}
