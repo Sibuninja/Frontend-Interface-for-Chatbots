@@ -1,8 +1,9 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Send, Mic, Paperclip } from "lucide-react";
+import { Send, Mic, MicOff, Paperclip, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useVoice } from "@/hooks/useVoice";
 
 interface ChatInputProps {
   onSendMessage: (message: string) => void;
@@ -16,6 +17,7 @@ export const ChatInput = ({
   placeholder = "Type your message..." 
 }: ChatInputProps) => {
   const [message, setMessage] = useState("");
+  const { isRecording, isProcessing, startRecording, stopRecording } = useVoice();
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -29,6 +31,17 @@ export const ChatInput = ({
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
       handleSubmit(e);
+    }
+  };
+
+  const handleVoiceClick = async () => {
+    if (isRecording) {
+      const transcribedText = await stopRecording();
+      if (transcribedText) {
+        setMessage(transcribedText);
+      }
+    } else {
+      await startRecording();
     }
   };
 
@@ -66,9 +79,22 @@ export const ChatInput = ({
             type="button"
             variant="secondary"
             size="icon"
-            className="h-12 w-12 rounded-xl bg-chat-surface hover:bg-chat-surface-hover"
+            onClick={handleVoiceClick}
+            disabled={disabled || isProcessing}
+            className={cn(
+              "h-12 w-12 rounded-xl transition-all duration-300",
+              isRecording 
+                ? "bg-destructive/20 text-destructive border-destructive/50 hover:bg-destructive/30" 
+                : "bg-chat-surface hover:bg-chat-surface-hover"
+            )}
           >
-            <Mic className="w-5 h-5" />
+            {isProcessing ? (
+              <Loader2 className="w-5 h-5 animate-spin" />
+            ) : isRecording ? (
+              <MicOff className="w-5 h-5" />
+            ) : (
+              <Mic className="w-5 h-5" />
+            )}
           </Button>
           
           <Button

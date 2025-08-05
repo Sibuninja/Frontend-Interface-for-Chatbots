@@ -1,25 +1,20 @@
-import { useState, useRef, useEffect } from "react";
+import { useRef, useEffect } from "react";
 import { ChatMessage } from "./ChatMessage";
 import { ChatInput } from "./ChatInput";
 import { ChatHeader } from "./ChatHeader";
 import { EmptyState } from "./EmptyState";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
-
-interface Message {
-  id: string;
-  content: string;
-  isUser: boolean;
-  timestamp: string;
-}
+import { useChat } from "@/hooks/useChat";
+import { useAuth } from "@/hooks/useAuth";
 
 interface ChatInterfaceProps {
   className?: string;
 }
 
 export const ChatInterface = ({ className }: ChatInterfaceProps) => {
-  const [messages, setMessages] = useState<Message[]>([]);
-  const [isTyping, setIsTyping] = useState(false);
+  const { messages, isLoading, sendMessage } = useChat();
+  const { user } = useAuth();
   const scrollAreaRef = useRef<HTMLDivElement>(null);
 
   const scrollToBottom = () => {
@@ -34,45 +29,14 @@ export const ChatInterface = ({ className }: ChatInterfaceProps) => {
 
   useEffect(() => {
     scrollToBottom();
-  }, [messages, isTyping]);
+  }, [messages, isLoading]);
 
   const handleSendMessage = async (content: string) => {
-    const userMessage: Message = {
-      id: Date.now().toString(),
-      content,
-      isUser: true,
-      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-    };
-
-    setMessages(prev => [...prev, userMessage]);
-    setIsTyping(true);
-
-    // Simulate AI response
-    setTimeout(() => {
-      const botMessage: Message = {
-        id: (Date.now() + 1).toString(),
-        content: generateBotResponse(content),
-        isUser: false,
-        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-      };
-      
-      setMessages(prev => [...prev, botMessage]);
-      setIsTyping(false);
-    }, 1500);
-  };
-
-  const generateBotResponse = (userMessage: string): string => {
-    const responses = [
-      "That's a great question! Let me think about that for a moment. " + userMessage.toLowerCase().includes('help') 
-        ? "I'm here to assist you with whatever you need."
-        : "Here's what I think about that topic...",
-      "I understand what you're asking. Based on your message, I'd suggest considering multiple perspectives on this.",
-      "Thanks for sharing that with me! That's really interesting. Let me provide some insights that might be helpful.",
-      "I appreciate you bringing this up. This is actually a fascinating topic that connects to several important concepts.",
-      "Great point! I've been thinking about similar ideas lately. Here's my perspective on what you've shared..."
-    ];
-    
-    return responses[Math.floor(Math.random() * responses.length)];
+    if (!user) {
+      console.error('User not authenticated');
+      return;
+    }
+    await sendMessage(content, user.id);
   };
 
   const handleSuggestionClick = (suggestion: string) => {
@@ -102,7 +66,7 @@ export const ChatInterface = ({ className }: ChatInterfaceProps) => {
                 />
               ))}
               
-              {isTyping && (
+              {isLoading && (
                 <ChatMessage
                   message=""
                   isUser={false}
@@ -116,7 +80,7 @@ export const ChatInterface = ({ className }: ChatInterfaceProps) => {
       
       <ChatInput 
         onSendMessage={handleSendMessage} 
-        disabled={isTyping}
+        disabled={isLoading}
         placeholder="Ask me anything..."
       />
     </div>
